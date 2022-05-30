@@ -12,7 +12,7 @@ extern "C" {
 #define RXD2 16
 #define TXD2 17
 
-#define BAND    915E6
+#define BAND  915E6
 
 
 int counter = 0;
@@ -23,6 +23,12 @@ TimerHandle_t wifiReconnectTimer;
 void connectToWifi() {
   Serial.println("Connecting to Wi-Fi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status()!= WL_CONNECTED)
+  {
+    Serial.println("Connecting...");
+    delay(500);
+  } 
+  
 }
 
 void connectToMqtt() {
@@ -114,11 +120,11 @@ void onReceive(int packetSize)
 {
 
   Serial.print("Received packet '");
+  //  Aqui tem um crash, substituir por string ou coisas assim, procurar bibliotecas...
   char buff[256];
-
   for (int i = 0; i < packetSize; i++)
   {
-    buff[i] =+ (char)LoRa.read();
+    buff[i] = (char)LoRa.read();
   }
   mqttClient.publish("teste/1",0,true,buff);
 
@@ -128,21 +134,14 @@ void onReceive(int packetSize)
 
 void setup(){
 
-  Serial.begin(9600);
-
-  while (!Serial);
-
+  Serial.begin(115200);
+  delay(500);
   Serial.println("LoRa Sender");
-
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-
-  Serial.println();
-  Serial.println();
 
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
-  WiFi.onEvent(WiFiEvent);
+//  WiFi.onEvent(WiFiEvent);
 
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
@@ -153,11 +152,12 @@ void setup(){
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
 
   connectToWifi();
+  connectToMqtt();
+  Heltec.begin(true, true , true, true, BAND );
 
-  Heltec.begin(true /*DisplayEnable Enable*/, true /*Heltec.LoRa Disable*/, true /*Serial Enable*/, true /*PABOOST Enable*/, BAND /*long BAND*/);
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
 
-  Serial.println("Serial Txd está no pino: "+String(TX));
-  Serial.println("Serial Rxd está no pino: "+String(RX));
 }
 
 void loop() {

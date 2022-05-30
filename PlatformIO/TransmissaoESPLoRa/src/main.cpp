@@ -18,7 +18,7 @@ int counter = 0;
 void setup() {
   // Observe que o formato para definir uma porta serial é o seguinte: Serial2.begin(taxa de transmissão, protocolo, pino RX, pino TX);
   
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   Serial.println("LoRa Sender");
 
