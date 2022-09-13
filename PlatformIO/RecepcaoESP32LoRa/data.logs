@@ -1,0 +1,22 @@
+10:20:36.864 > Guru Meditation Error: Core  1 panic'ed (Interrupt wdt timeout on CPU1). 
+10:20:36.872 >
+10:20:36.872 > Core  1 register dump:
+10:20:36.873 > PC      : 0x4008ee9c  PS      : 0x00060835  A0      : 0x8008d9ce  A1      : 0x3ffbee2c  
+10:20:36.881 > A2      : 0x3ffcb970  A3      : 0x3ffb8890  A4      : 0x00000004  A5      : 0x00060823
+10:20:36.890 > A6      : 0x00060823  A7      : 0x00000001  A8      : 0x3ffb8890  A9      : 0x00000018  
+10:20:36.896 > A10     : 0x3ffb8890  A11     : 0x00000018  A12     : 0x3ffc43fc  A13     : 0x00060823
+10:20:36.905 > A14     : 0x007bf0a8  A15     : 0x003fffff  SAR     : 0x00000004  EXCCAUSE: 0x00000006  
+10:20:36.912 > EXCVADDR: 0x00000000  LBEG    : 0x400896d8  LEND    : 0x400896ee  LCOUNT  : 0xffffffff
+10:20:36.920 > Core  1 was running in ISR context:
+10:20:36.923 > EPC1    : 0x400e2673  EPC2    : 0x00000000  EPC3    : 0x00000000  EPC4    : 0x00000000
+10:20:36.931 >
+10:20:36.931 >
+10:20:36.931 > Backtrace:0x4008ee99:0x3ffbee2c |<-CORRUPTED
+10:20:36.968 >   #0  0x4008ee99:0x3ffbee2c in vListInsert at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/freertos/list.c:166 (discriminator 1)
+
+
+10:21:42.794 > Backtrace:0x4008f010:0x3ffbe9fc |<-CORRUPTED
+10:21:42.830 >   #0  0x4008f010:0x3ffbe9fc in compare_and_set_native at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_hw_support/include/soc/compare_set.h:25
+10:21:42.830 >       (inlined by) spinlock_acquire at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_hw_support/include/soc/spinlock.h:103
+10:21:42.830 >       (inlined by) xPortEnterCriticalTimeout at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/freertos/port/xtensa/port.c:288
+10:21:42.830 >

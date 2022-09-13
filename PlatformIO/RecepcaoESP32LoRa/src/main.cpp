@@ -1,165 +1,68 @@
-#include <Arduino.h>
-#include <SPI.h>
 #include "heltec.h"
-#include <WiFi.h>
-#include "config.h"
-extern "C" {
-	#include "freertos/FreeRTOS.h"
-	#include "freertos/timers.h"
+#include "SPI.h"
+#include <Wire.h>
+
+#define BAND    915E6  //Escolha a frequência
+String packSize = "--";
+String packet ;
+/* Protótipo da função */
+void LoRaDataPrint();
+void cbk(int packetSize);
+/*
+  Nome da função: LoRaDataPrint
+  objetivo: imprime a temperatura e tamanho do pacote recebido no display.
+*/
+void LoRaDataPrint(){
+  Heltec.display->clear();
+  Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
+  Heltec.display->setFont(ArialMT_Plain_10);
+  Heltec.display->drawString(0 , 1 , "Recebendo "+ packSize + " bytes");
+  Heltec.display->setFont(ArialMT_Plain_16);
+  Heltec.display->drawString(15, 16, "Temperatura");
+  Heltec.display->drawString(33, 38, packet);
+  Heltec.display->drawString(78, 38, "°C");
+  Heltec.display->display();
 }
-#include <AsyncMqttClient.h>
-
-#define RXD2 16
-#define TXD2 17
-
-#define BAND  915E6
-
-
-int counter = 0;
-AsyncMqttClient mqttClient;
-TimerHandle_t mqttReconnectTimer;
-TimerHandle_t wifiReconnectTimer;
-
-void connectToWifi() {
-  Serial.println("Connecting to Wi-Fi...");
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status()!= WL_CONNECTED)
-  {
-    Serial.println("Connecting...");
-    delay(500);
-  } 
-  
-}
-
-void connectToMqtt() {
-  Serial.println("Connecting to MQTT...");
-  mqttClient.connect();
-}
-
-void WiFiEvent(WiFiEvent_t event) {
-    Serial.printf("[WiFi-event] event: %d\n", event);
-    switch(event) {
-    case SYSTEM_EVENT_STA_GOT_IP:
-        Serial.println("WiFi connected");
-        Serial.println("IP address: ");
-        Serial.println(WiFi.localIP());
-        connectToMqtt();
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        Serial.println("WiFi lost connection");
-        xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
-        xTimerStart(wifiReconnectTimer, 0);
-        break;
-    }
-}
-
-void onMqttConnect(bool sessionPresent) {
-  Serial.println("Connected to MQTT.");
-  Serial.print("Session present: ");
-  Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
-  Serial.print("Subscribing at QoS 2, packetId: ");
-  Serial.println(packetIdSub);
-  mqttClient.publish("test/lol", 0, true, "test 1");
-  Serial.println("Publishing at QoS 0");
-  uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
-  Serial.print("Publishing at QoS 1, packetId: ");
-  Serial.println(packetIdPub1);
-  uint16_t packetIdPub2 = mqttClient.publish("test/lol", 2, true, "test 3");
-  Serial.print("Publishing at QoS 2, packetId: ");
-  Serial.println(packetIdPub2);
-}
-
-void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  Serial.println("Disconnected from MQTT.");
-
-  if (WiFi.isConnected()) {
-    xTimerStart(mqttReconnectTimer, 0);
+/*
+  Nome da função: cbk
+  recebe como parâmetos um inteiros (packetSize)
+  objetivo: recebe a temperatura via LoRa e armazena na variável packet.
+*/
+void cbk(int packetSize) {
+  packet ="";
+  packSize = String(packetSize,DEC);
+  for (int i = 0; i < packetSize; i++) {
+    packet += (char) LoRa.read(); //Atribui um caractere por vez a váriavel packet 
   }
+  LoRaDataPrint();
 }
-
-void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  Serial.println("Subscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-  Serial.print("  qos: ");
-  Serial.println(qos);
-}
-
-void onMqttUnsubscribe(uint16_t packetId) {
-  Serial.println("Unsubscribe acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-}
-
-void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-  Serial.println("Publish received.");
-  Serial.print("  topic: ");
-  Serial.println(topic);
-  Serial.print("  qos: ");
-  Serial.println(properties.qos);
-  Serial.print("  dup: ");
-  Serial.println(properties.dup);
-  Serial.print("  retain: ");
-  Serial.println(properties.retain);
-  Serial.print("  len: ");
-  Serial.println(len);
-  Serial.print("  index: ");
-  Serial.println(index);
-  Serial.print("  total: ");
-  Serial.println(total);
-}
-
-void onMqttPublish(uint16_t packetId) {
-  Serial.println("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-}
-
-void onReceive(int packetSize)
+/******************* função principal (setup) *********************/
+void setup()
 {
+  Serial.begin(9600);
+  Heltec.begin(true /*Habilita o Display*/, true /*Heltec.Heltec.Heltec.LoRa Disable*/, true /*Habilita debug Serial*/, true /*Habilita o PABOOST*/, BAND /*Frequência BAND*/);
 
-  Serial.print("Received packet '");
-  //  Aqui tem um crash, substituir por string ou coisas assim, procurar bibliotecas...
-  char buff[256];
-  for (int i = 0; i < packetSize; i++)
-  {
-    buff[i] = (char)LoRa.read();
+  Heltec.display->init();
+  Heltec.display->flipScreenVertically();  
+  Heltec.display->setFont(ArialMT_Plain_10);
+  Heltec.display->clear();
+  Heltec.display->drawString(10, 5, "Iniciado com Sucesso!");
+  Heltec.display->drawString(10, 30, "Aguardando os dados...");
+  Heltec.display->display();
+  Serial.println("Iniciado com Sucesso!");
+  Serial.println("Aguardando os dados...");
+  delay(1000);
+  LoRa.receive(); // Habilita o rádio LoRa para receber dados
+}
+/******************* função em loop (loop) *********************/
+void loop()
+{
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) { //Verifica se há dados chegando via LoRa
+    cbk(packetSize);
+    Heltec.display->clear();
+    Heltec.display->drawString(10, 5, packet);
+    Serial.print(packet); //Imprime no monitor serial a temperatura
+    yield();
   }
-  mqttClient.publish("teste/1",0,true,buff);
-
-  Serial.print("' with RSSI ");
-  Serial.println(LoRa.packetRssi());
-}
-
-void setup(){
-
-  Serial.begin(115200);
-  delay(500);
-  Serial.println("LoRa Sender");
-
-  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
-  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
-
-//  WiFi.onEvent(WiFiEvent);
-
-  mqttClient.onConnect(onMqttConnect);
-  mqttClient.onDisconnect(onMqttDisconnect);
-  mqttClient.onSubscribe(onMqttSubscribe);
-  mqttClient.onUnsubscribe(onMqttUnsubscribe);
-  mqttClient.onMessage(onMqttMessage);
-  mqttClient.onPublish(onMqttPublish);
-  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-
-  connectToWifi();
-  connectToMqtt();
-  Heltec.begin(true, true , true, true, BAND );
-
-  LoRa.onReceive(onReceive);
-  LoRa.receive();
-
-}
-
-void loop() {
-  // nada
 }

@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "..\\..\\..\\..\\..\\Documents\\PlatformIO\\Projects\\Contador CF"
+		},
+		{
+			"name": "RecepcaoESP32LoRa",
+			"path": "..\\..\\RecepcaoESP32LoRa"
+		},
+		{
+			"name": "TransmissaoESPLoRa",
+			"path": ".."
+		},
+		{
+			"name": "serial",
+			"path": "..\\..\\..\\..\\..\\Documents\\PlatformIO\\Projects\\serial"
+		}
+	],
+	"settings": {}
+}
